@@ -2,27 +2,35 @@
 
 # Struktur Repo
 ```text
-Tubes 2/
+Tubes2/
+├── README.md                 # name, description, toolboxes, how to run (required!)
+├── .gitignore
 │
-├── README.md                      # Informasi utama repositori
-│
-├── src/                           # Folder khusus source code MATLAB & GUI
+├── src/
 │   ├── gui/
-│   │   └── main.mlapp             # Main App
-│   └── functions/                 # Folder fungsi-fungsi utama pemrosesan citra
-│       ├── lowpass_filter.m       # ILPF, GLPF, dan BLPF
-│       ├── highpass_filter.m      # IHPF, GHPF, dan BHPF
-│       ├── enhance_brightness.m   # Enhance Brightness
-│       ├── restore_periodic_noise.m # Bandreject & Notch filter
-│       └── restore_motion_blur.m  # Inverse & Wiener filtering
+│   │   └── main.mlapp
+│   ├── functions/
+│   │   ├── lowpass_filter.m          # ILPF, GLPF, BLPF
+│   │   ├── highpass_filter.m         # IHPF, GHPF, BHPF
+│   │   ├── enhance_brightness.m
+│   │   ├── bandreject_filter.m       # Ideal, Butterworth, Gaussian
+│   │   ├── notch_reject_filter.m
+│   │   ├── restore_periodic_noise.m  # uses the two filters above
+│   │   ├── motion_blur_psf.m         # builds H(u,v)
+│   │   ├── inverse_filter.m
+│   │   └── wiener_filter.m
+│   └── utils/                # shared helpers
+│       ├── freq_grid.m       # distance D(u,v) from the center
+│       ├── show_spectrum.m   # log magnitude spectrum
+│       └── apply_freq_filter.m  # FFT → multiply by H → inverse FFT (gray + color)
 │
-├── data/                          # Folder untuk data uji resmi
-│   ├── B_smoothing_blurring_frequency/
-│   ├── C_high_pass_filtering_frequency/
-│   ├── D_brightness_frequency/
-│   ├── E_periodic_noise_restoration/
-│   └── F_motion_blur_restoration/
+├── scripts/                  # NEW
+│   ├── run_all_B.m ... run_all_F.m   # process every input image
+│   └── compare_builtin.m             # deconvwnr etc. ONLY as comparison
 │
-└── docs/                       
-    └── 18223090_NIM2_Tugas2_IF4073.pdf
+├── data/                     # test images
+├── results/                  # saved outputs
+└── docs/
+    └── NIM1_NIM2_Tugas2_IF4073.pdf
 ```
+
