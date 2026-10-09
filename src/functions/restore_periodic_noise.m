@@ -1,5 +1,4 @@
 function restore_periodic_noise()
-
     clc; clear; close all;
 
     image_path = '../../data/E_periodic_noise_restoration/input/brick_gray_periodic_noise.png';
@@ -7,76 +6,38 @@ function restore_periodic_noise()
     if exist(image_path, 'file')
         f = imread(image_path);
     else
-        % Fallback jika file tidak ditemukan
         f = buatCitraUjiSintetis();
     end
 
-    pilihanFilter = menu('Pilih Jenis Filter Restorasi:', ...
-                         '1. Bandreject Filter', ...
-                         '2. Notch Reject Filter');
+    filterMode = 'notchreject'; % Opsi: 'bandreject' | 'notchreject'
+    filterType = 'gaussian';    % Opsi: 'ideal' | 'butterworth' | 'gaussian'
+    n = 2;                      % Orde filter (khusus Butterworth)
 
-    if pilihanFilter == 0
-        disp('Pengujian dibatalkan oleh pengguna.');
-        return;
-    elseif pilihanFilter == 1
-        filterMode = 'bandreject';
-    else
-        filterMode = 'notchreject';
-    end
-
-    pilihanBentuk = menu('Pilih Bentuk Filter (Filter Shape):', ...
-                         '1. Ideal Filter', ...
-                         '2. Butterworth Filter', ...
-                         '3. Gaussian Filter');
-
-    if pilihanBentuk == 0 % Koreksi typo: pilihanBentuk
-        disp('Pengujian dibatalkan oleh pengguna.');
-        return;
-    end
-
-    daftarBentuk = {'ideal', 'butterworth', 'gaussian'};
-    filterType = daftarBentuk{pilihanBentuk};
-
-    n = 2; % Default orde untuk Butterworth
-
-    switch filterMode
+    switch lower(filterMode)
         case 'bandreject'
-            % Dialog input parameter Bandreject
-            prompt = {'Cutoff Frequency (D0):', 'Bandwidth (W):', 'Orde Filter (khusus Butterworth):'};
-            dlgtitle = 'Parameter Bandreject Filter';
-            dims = [1 45];
-            definput = {'40', '10', '2'};
+            % Parameter khusus Bandreject
+            D0 = 40; % Cutoff frequency (radius pusat pita)
+            W  = 10; % Bandwidth (lebar pita)
             
-            answer = inputdlg(prompt, dlgtitle, dims, definput);
-            if isempty(answer), return; end
-            
-            D0 = str2double(answer{1});
-            W  = str2double(answer{2});
-            n  = str2double(answer{3});
-
-            % Jalankan Bandreject
             [f_filtered, H] = jalankanBandreject(f, D0, W, filterType, n);
             filterTitle = ['Bandreject (', upper(filterType), ')'];
 
         case 'notchreject'
-            % Dialog input parameter Notch Reject
-            prompt = {'Radius Cutoff (D0):', ...
-                      'Notch Offsets [row_offset, col_offset]:', ...
-                      'Orde Filter (khusus Butterworth):'};
-            dlgtitle = 'Parameter Notch Reject Filter';
-            dims = [1 55; 3 55; 1 55]; % Ukuran kotak dialog
-            definput = {'10', '[35, 40; -35, -40; 20, -50; -20, 50]', '2'};
-
-            answer = inputdlg(prompt, dlgtitle, dims, definput);
-            if isempty(answer), return; end
-
-            D0 = str2double(answer{1});
-            notchCenters = str2num(answer{2}); %#ok<ST2NM>
-            n = str2double(answer{3});
-
-            % Jalankan Notch Reject
+            % Parameter khusus Notch Reject
+            D0 = 10; % Radius area notch
+            
+            notchCenters = [
+                 35,  40;
+                -35, -40;
+                 20, -50;
+                -20,  50
+            ];
+            
             [f_filtered, H] = jalankanNotchReject(f, notchCenters, D0, filterType, n);
             filterTitle = ['Notch Reject (', upper(filterType), ')'];
+
+        otherwise
+            error('Filter mode tidak dikenal. Gunakan ''bandreject'' atau ''notchreject''.');
     end
 
     F_orig = hitungSpektrum(f);
