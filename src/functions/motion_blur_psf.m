@@ -31,45 +31,39 @@ function PSF = applyMotionBlur(len, theta)
     if len <= 0
         error('Panjang motion blur (len) harus lebih besar dari 0.');
     end
-
+    
     rad = deg2rad(theta);
-
     dx = cos(rad);
-    dy = -sin(rad);              % baris gambar turun ke bawah, jadi tanda dibalik
+    dy = -sin(rad);              
 
-    % Garis sepanjang len piksel: dari -len/2 sampai +len/2.
-    % (Memakai (len-1)/2 membuat dua ujung hanya setengah bobot.)
     halfExt = len / 2;
-
     halfWidth  = max(ceil(abs(halfExt * dx) - 0.5), 0);
     halfHeight = max(ceil(abs(halfExt * dy) - 0.5), 0);
 
     sizeR = 2 * halfHeight + 1;
     sizeC = 2 * halfWidth + 1;
-
+    
     centerR = halfHeight + 1;
     centerC = halfWidth + 1;
-
-    PSF = zeros(sizeR, sizeC);
-
-    % Titik-titik di sepanjang garis. Dipakai titik TENGAH tiap potongan kecil,
-    % sehingga ujung garis tidak ikut terhitung berlebih atau kurang.
+    
     numSamples = ceil(len * 50);
     t = ((1:numSamples) - 0.5) / numSamples * len - halfExt;
-
-    for i = 1:numSamples
-        x = t(i) * dx;
-        y = t(i) * dy;
-
-        r = round(centerR + y);
-        c = round(centerC + x);
-
-        if r >= 1 && r <= sizeR && c >= 1 && c <= sizeC
-            PSF(r, c) = PSF(r, c) + 1;
-        end
+    
+    x = t * dx;
+    y = t * dy;
+    r = round(centerR + y);
+    c = round(centerC + x);
+    
+    valid = (r >= 1 & r <= sizeR) & (c >= 1 & c <= sizeC);
+    r = r(valid);
+    c = c(valid);
+    
+    if ~isempty(r)
+        PSF = accumarray([r(:), c(:)], 1, [sizeR, sizeC]);
+    else
+        PSF = zeros(sizeR, sizeC);
     end
-
-    % jumlah total harus 1 supaya gambar tidak jadi lebih terang atau gelap
+    
     totalSum = sum(PSF(:));
     if totalSum > 0
         PSF = PSF / totalSum;

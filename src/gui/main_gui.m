@@ -34,7 +34,7 @@ function main()
     end
 
     % ---- keadaan aplikasi ---------------------------------------------
-    img = imread('cameraman.tif');     % citra bawaan supaya GUI langsung bisa dicoba
+    img = imread(fullfile(dataDir, 'B_smoothing_blurring_frequency/input/astronaut_color_gaussian_noise.png'));     % citra bawaan supaya GUI langsung bisa dicoba
     ref = [];                          % citra acuan (opsional)
 
     % ---- jendela utama ------------------------------------------------
