@@ -1,10 +1,15 @@
 function [imgFiltered, H] = notch_reject_filter(img, notchCenters, D0, filterType, n)
-    if nargin < 5
-        n = 1;
+    if nargin < 5 || isempty(n)
+        n = 2;
     end
-    rows = size(img, 1)
-    cols = size(img, 2)
-    numChannels = size(img, 3)
+    if D0 <= 0
+        error('notch_reject_filter:badD0', 'D0 must be greater than 0.');
+    end
+    if isempty(notchCenters) || size(notchCenters, 2) ~= 2
+        error('notch_reject_filter:badCenters', ...
+              'notchCenters must be a K-by-2 matrix: [row col].');
+    end
+    [rows, cols, numChannels] = size(img);
 
     H = createBand(rows, cols, notchCenters, D0, filterType, n)
 
@@ -35,45 +40,36 @@ function x = filterSatuKanal(channel, H)
 end
 
 function H = createBand(rows, cols, notchCenters, D0, filterType, n)
+ 
+    [~, U, V] = freq_grid(rows, cols);   % row / column offset from the center
+ 
     H = ones(rows, cols);
-
-    centerR = floor(rows / 2) + 1;
-    centerC = floor(cols / 2) + 1;
-
-    numNotches = size(notchCenters, 1)
+    numNotches = size(notchCenters, 1);
+ 
     for k = 1:numNotches
         uk = notchCenters(k, 1);
         vk = notchCenters(k, 2);
-
-        Hk = ones(rows, cols)
-        for r = 1:rows
-            for c = 1:cols
-                D1 = sqrt((r - (centerR + uk))^2 + (c - (centerC + vk))^2);
-                D2 = sqrt((r - (centerR - uk))^2 + (c - (centerC - vk))^2);
-
-                switch lower(filterType)
-                    case 'ideal'
-                        if (D1 <= D0) || (D2 <= D0)
-                            Hk(r, c) = 0;
-                        else
-                            Hk(r, c) = 1;
-                        end
-        
-                    case 'butterworth'
-                        if (D1 * D2) == 0
-                            Hk(r, c) = 0;
-                        else
-                            val = (D0^2) / (D1 * D2);
-                            Hk(r, c) = 1 / (1 + val^n);
-                        end
-        
-                    case 'gaussian'
-                        val = (D1 * D2) / (D0^2);
-                        Hk(r, c) = 1 - exp(-0.5 * val);
-                end
-            end
+ 
+        % distance to the spot, and to its symmetric partner
+        D1 = sqrt((U - uk).^2 + (V - vk).^2);
+        D2 = sqrt((U + uk).^2 + (V + vk).^2);
+ 
+        switch lower(filterType)
+            case 'ideal'
+                Hk = double(~(D1 <= D0 | D2 <= D0));
+ 
+            case 'butterworth'
+                Hk = 1 ./ (1 + (D0^2 ./ (D1 .* D2)).^n);
+                Hk(D1 .* D2 == 0) = 0;       % exactly on the spot: remove
+ 
+            case 'gaussian'
+                Hk = 1 - exp(-0.5 * (D1 .* D2) ./ D0^2);
+ 
+            otherwise
+                error('notch_reject_filter:badType', ...
+                      'Unknown filterType "%s". Use ideal, butterworth, or gaussian.', filterType);
         end
-
+ 
         H = H .* Hk;
     end
 end
