@@ -39,7 +39,7 @@ function PSF = applyMotionBlur(len, theta)
     dx = cos(rad);
     dy = -sin(rad);
 
-    halfLen = (len-1)/2
+    halfLen = (len-1)/2;
     halfWidth = ceil(abs(halfLen * dx));
     halfHeight = ceil(abs(halfLen * dy));
 
