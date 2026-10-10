@@ -1,9 +1,14 @@
 function [imgFiltered, H] = bandreject_filter(img, D0, W, filterType, n)
-    rows = size(img, 1)
-    cols = size(img, 2)
-    numChannels = size(img, 3)
+    if nargin < 5 || isempty(n)
+        n = 2;
+    end
+    if D0 <= 0 || W <= 0
+        error('bandreject_filter:badParam', 'D0 and W must be greater than 0.');
+    end
 
-    H = createBand(rows, cols, D0, W, filterType, n)
+    [rows, cols, numChannels] = size(img);
+
+    H = createBand(rows, cols, D0, W, filterType, n);
     
     imgFiltered = zeros(size(img), 'uint8');
 
@@ -32,39 +37,27 @@ function x = filterSatuKanal(channel, H)
 end
 
 function H = createBand(rows, cols, D0, W, filterType, n)
-    H = zeros(rows, cols);
-
-    centerR = floor(rows / 2) + 1;
-    centerC = floor(cols / 2) + 1;
-
-    for r = 1:rows
-        for c = 1:cols
-            D = sqrt((r - centerR)^2 + (c - centerC)^2);
-
-            switch lower(filterType)
-                case 'ideal'
-                    if (D >= (D0 - W/2)) && (D <= (D0 + W/2))
-                        H(r, c) = 0;
-                    else
-                        H(r, c) = 1;
-                    end
-
-                case 'butterworth'
-                    if abs(D^2 - D0^2) < 1e-10
-                        H(r, c) = 0;
-                    else
-                        val = (D * W) / (D^2 - D0^2);
-                        H(r, c) = 1 / (1 + val^(2*n));
-                    end
-
-                case 'gaussian'
-                    if D == 0
-                        H(r, c) = 1;
-                    else
-                        val = (D^2 - D0^2) / (D * W);
-                        H(r, c) = 1 - exp(-0.5*val^2);
-                    end
-            end
-        end
+    D = freq_grid(rows, cols);
+ 
+    switch lower(filterType)
+        case 'ideal'
+            H = ones(rows, cols);
+            H(D >= (D0 - W/2) & D <= (D0 + W/2)) = 0;
+ 
+        case 'butterworth'
+            val = (D .* W) ./ (D.^2 - D0^2);
+            H = 1 ./ (1 + abs(val).^(2*n));
+ 
+        case 'gaussian'
+            val = (D.^2 - D0^2) ./ (D .* W);
+            H = 1 - exp(-0.5 * val.^2);
+ 
+        otherwise
+            error('bandreject_filter:badType', ...
+                  'Unknown filterType "%s". Use ideal, butterworth, or gaussian.', filterType);
     end
+ 
+    % D = 0 (the center) can give 0/0 = NaN. The center must be KEPT.
+    H(isnan(H)) = 1;
+    H(D == 0)   = 1;
 end
